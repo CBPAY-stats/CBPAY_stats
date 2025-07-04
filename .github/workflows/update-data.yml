@@ -19,6 +19,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -40,12 +41,14 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
     
-    - name: Commit and push changes
+    - name: Pull latest changes and commit updates
       run: |
+        git pull origin main --rebase
         git add cbpay_holders.json cbpay_market_data.json cbpay_large_transactions.json
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
           git commit -m "Update CBPAY data - $(date)"
-          git push
+          git push origin main
         fi
+
