@@ -31,29 +31,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
     
-    - name: Debug - Check files before script
-      run: |
-        echo "Files before running script:"
-        ls -la *.json || echo "No JSON files found"
-        echo "Current directory:"
-        pwd
-        echo "All files:"
-        ls -la
-    
     - name: Run data collection script
       env:
         COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
-      run: |
-        echo "Running data collection script..."
-        python get_cbpay_enhanced_data.py
-        echo "Script completed with exit code: $?"
-    
-    - name: Debug - Check files after script
-      run: |
-        echo "Files after running script:"
-        ls -la *.json || echo "No JSON files found"
-        echo "Git status:"
-        git status
+      run: python get_cbpay_enhanced_data.py
     
     - name: Configure Git
       run: |
@@ -62,22 +43,14 @@ jobs:
     
     - name: Pull latest changes and commit updates
       run: |
-        echo "Pulling latest changes..."
-        git pull origin main --rebase || echo "Pull failed or no changes to pull"
-        
-        echo "Adding files to git..."
-        git add cbpay_holders.json cbpay_market_data.json cbpay_large_transactions.json || echo "Some files may not exist"
-        
-        echo "Checking for changes..."
+        git pull origin main --rebase
+        git add cbpay_holders.json cbpay_market_data.json cbpay_large_transactions.json
         if git diff --staged --quiet; then
-          echo "No changes to commit - this is normal if APIs didn't return new data"
-          exit 0
+          echo "No changes to commit"
         else
-          echo "Changes detected, committing..."
           git commit -m "Update CBPAY data - $(date)"
-          echo "Pushing changes..."
           git push origin main
-          echo "Push completed successfully"
         fi
+
 
 
