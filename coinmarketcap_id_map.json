@@ -1,0 +1,30 @@
+{
+    "status": {
+        "timestamp": "2025-07-05T07:51:18.825Z",
+        "error_code": 0,
+        "error_message": null,
+        "elapsed": 12,
+        "credit_count": 1,
+        "notice": null
+    },
+    "data": [
+        {
+            "id": 32992,
+            "rank": 2307,
+            "name": "CBPAY Global",
+            "symbol": "CBPAY",
+            "slug": "coinbar-pay",
+            "is_active": 1,
+            "status": 1,
+            "first_historical_data": "2024-09-11T18:55:00.000Z",
+            "last_historical_data": "2025-07-05T07:40:00.000Z",
+            "platform": {
+                "id": 51,
+                "name": "Arbitrum",
+                "symbol": "ARB",
+                "slug": "arbitrum",
+                "token_address": "0xd6cF874E24A9F5f43075142101A6b13735CDD424"
+            }
+        }
+    ]
+}
