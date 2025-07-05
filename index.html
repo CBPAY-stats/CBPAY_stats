@@ -180,30 +180,6 @@
         table td a:hover {
             text-decoration: underline;
         }
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 20px;
-            gap: 10px;
-        }
-        .pagination button {
-            background-color: #4299e1;
-            color: #fff;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-        }
-        .pagination button:disabled {
-            background-color: #555;
-            cursor: not-allowed;
-        }
-        .pagination span {
-            font-size: 1em;
-            color: #e0e0e0;
-        }
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -320,7 +296,7 @@
     </div>
 
     <div class="container">
-        <div class="total-holders">Top 50 Holders: <span id="total-holders-count">Loading...</span></div>
+        <div class="total-holders">Top 50 Holders</div>
         <div class="controls">
             <input type="text" id="search-input" placeholder="Search by address...">
             <select id="sort-select">
@@ -345,11 +321,6 @@
                 </tbody>
             </table>
         </div>
-        <div class="pagination">
-            <button id="prev-page">Previous</button>
-            <span id="page-info">Page 1 of 1</span>
-            <button id="next-page">Next</button>
-        </div>
     </div>
 
     <div class="large-transactions-section">
@@ -364,8 +335,6 @@
         let marketData = {};
         let largeTransactions = [];
         let filteredData = [];
-        let currentPage = 1;
-        const itemsPerPage = 50;
 
         // Auto-refresh every hour
         setInterval(() => {
@@ -416,9 +385,6 @@
                 document.getElementById("price").textContent = `$${marketData.price_usd.toFixed(8)}`;
             }
 
-            // Update top 50 holders count
-            document.getElementById('total-holders-count').textContent = holdersData.length.toLocaleString();
-
             // Update large transactions
             updateLargeTransactions();
 
@@ -463,20 +429,16 @@
 
         function updateTable() {
             const tbody = document.getElementById('holders-table-body');
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const pageData = filteredData.slice(startIndex, endIndex);
 
-            if (pageData.length === 0) {
+            if (filteredData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No data found</td></tr>';
                 return;
             }
 
             const totalSupply = holdersData.reduce((sum, holder) => sum + holder.balance, 0);
 
-            tbody.innerHTML = pageData.map((holder, index) => {
-                const rank = startIndex + index + 1;
+            tbody.innerHTML = filteredData.map((holder, index) => {
+                const rank = index + 1;
                 const percentage = ((holder.balance / totalSupply) * 100).toFixed(4);
                 return `
                     <tr>
@@ -487,11 +449,6 @@
                     </tr>
                 `;
             }).join('');
-
-            // Update pagination
-            document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
-            document.getElementById('prev-page').disabled = currentPage === 1;
-            document.getElementById('next-page').disabled = currentPage === totalPages;
         }
 
         function sortData(criteria) {
@@ -509,7 +466,6 @@
                     filteredData.sort((a, b) => b.address.localeCompare(a.address));
                     break;
             }
-            currentPage = 1;
             updateTable();
         }
 
@@ -521,7 +477,6 @@
                     holder.address.toLowerCase().includes(searchTerm.toLowerCase())
                 );
             }
-            currentPage = 1;
             updateTable();
         }
 
@@ -532,21 +487,6 @@
 
         document.getElementById('sort-select').addEventListener('change', (e) => {
             sortData(e.target.value);
-        });
-
-        document.getElementById('prev-page').addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                updateTable();
-            }
-        });
-
-        document.getElementById('next-page').addEventListener('click', () => {
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                updateTable();
-            }
         });
 
         // Load data on page load
