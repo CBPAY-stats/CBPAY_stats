@@ -3,57 +3,63 @@ import json
 import datetime
 import time
 
-# CoinGecko API configuration
-COINGECKO_API_KEY = "CG-8CoKVLYmm4crygn9DeHvFUAk" # Replace with your actual API key
-COINGECKO_API_URL = "https://api.coingecko.com/api/v3"
-COINGECKO_HEADERS = {"x-cg-pro-api-key": COINGECKO_API_KEY}
+# CoinMarketCap API configuration
+CMC_API_KEY = "db7ad51a-325c-4047-8799-005c2664b776"
+CMC_API_URL = "https://pro-api.coinmarketcap.com/v1"
+CMC_HEADERS = {
+    "Accepts": "application/json",
+    "X-CMC_PRO_API_KEY": CMC_API_KEY,
+}
 
 # XDB Chain Horizon API configuration
 HORIZON_URL = "https://horizon.livenet.xdbchain.com"
 ASSET_CODE = "CBPAY"
 ASSET_ISSUER = "GD7PT6VAXH227WBYR5KN3OYKGSNXVETMYZUP3R62DFX3BBC7GGOBDFJ2"
 
-# --- Function to get CoinGecko data ---
-def get_coingecko_data():
-    print("Fetching CoinGecko data...")
+# --- Function to get CoinMarketCap data ---
+def get_coinmarketcap_data():
+    print("Fetching CoinMarketCap data...")
     try:
-        # Get coin ID for CBPAY
-        search_url = f"{COINGECKO_API_URL}/search?query=cbpay"
-        search_response = requests.get(search_url, headers=COINGECKO_HEADERS)
-        search_response.raise_for_status()
-        search_data = search_response.json()
+        # Get coin ID for CBPAY from CoinMarketCap map endpoint
+        map_url = f"{CMC_API_URL}/cryptocurrency/map"
+        map_params = {"symbol": ASSET_CODE}
+        map_response = requests.get(map_url, headers=CMC_HEADERS, params=map_params)
+        map_response.raise_for_status()
+        map_data = map_response.json()
         
         cbpay_id = None
-        for coin in search_data.get("coins", []):
-            if coin["symbol"].upper() == ASSET_CODE and "coinbarpay" in coin["id"].lower():
-                cbpay_id = coin["id"]
-                break
+        if map_data and map_data.get("data"):
+            for coin in map_data["data"]:
+                if coin["symbol"] == ASSET_CODE:
+                    cbpay_id = coin["id"]
+                    break
         
         if not cbpay_id:
-            print(f"Could not find CoinGecko ID for {ASSET_CODE}")
+            print(f"Could not find CoinMarketCap ID for {ASSET_CODE}")
             return None
 
-        # Get market data
-        market_data_url = f"{COINGECKO_API_URL}/simple/price?ids={cbpay_id}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true"
-        market_data_response = requests.get(market_data_url, headers=COINGECKO_HEADERS)
-        market_data_response.raise_for_status()
-        market_data = market_data_response.json()
+        # Get market data using the ID
+        quotes_url = f"{CMC_API_URL}/cryptocurrency/quotes/latest"
+        quotes_params = {"id": cbpay_id, "convert": "USD"}
+        quotes_response = requests.get(quotes_url, headers=CMC_HEADERS, params=quotes_params)
+        quotes_response.raise_for_status()
+        quotes_data = quotes_response.json()
 
-        if cbpay_id in market_data:
-            data = market_data[cbpay_id]
+        if str(cbpay_id) in quotes_data.get("data", {}):
+            data = quotes_data["data"][str(cbpay_id)]["quote"]["USD"]
             return {
-                "price_usd": data.get("usd"),
-                "market_cap_usd": data.get("usd_market_cap"),
-                "volume_24h_usd": data.get("usd_24h_vol"),
-                "price_change_24h": data.get("usd_24h_change"),
+                "price_usd": data.get("price"),
+                "market_cap_usd": data.get("market_cap"),
+                "volume_24h_usd": data.get("volume_24h"),
+                "price_change_24h": data.get("percent_change_24h"),
                 "last_updated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "source": "CoinGecko"
+                "source": "CoinMarketCap"
             }
         else:
             print(f"No market data found for {cbpay_id}")
             return None
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching CoinGecko data: {e}")
+        print(f"Error fetching CoinMarketCap data: {e}")
         return None
 
 # --- Function to get all holders ---
@@ -160,7 +166,7 @@ def get_large_transactions(limit=10, threshold=100000):
 # --- Main execution ---
 if __name__ == "__main__":
     # Get market data
-    market_data = get_coingecko_data()
+    market_data = get_coinmarketcap_data()
     if market_data:
         with open("cbpay_market_data.json", "w") as f:
             json.dump(market_data, f, indent=4)
@@ -187,5 +193,7 @@ if __name__ == "__main__":
         print("Failed to get large transactions.")
 
     print("Data collection complete.")
+
+
 
 
