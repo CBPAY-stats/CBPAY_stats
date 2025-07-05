@@ -64,51 +64,22 @@ def get_coinmarketcap_data():
 
 # --- Function to get all holders ---
 def get_all_holders():
-    print("Fetching all CBPAY holders...")
-    holders = []
-    params = {
-        "asset_code": ASSET_CODE,
-        "asset_issuer": ASSET_ISSUER,
-        "limit": 200, # Max limit per request
-        "order": "desc"
-    }
-    url = f"{HORIZON_URL}/accounts"
+    print("Processing local CBPAY holders data for top 50...")
+    try:
+        with open("cbpay_holders.json", "r") as f:
+            holders = json.load(f)
+    except FileNotFoundError:
+        print("cbpay_holders.json not found. Cannot process holders.")
+        return []
+    except json.JSONDecodeError:
+        print("Error decoding cbpay_holders.json. File might be corrupted.")
+        return []
 
-    while True:
-        try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            records = data.get("_embedded", {}).get("records", [])
-
-            if not records:
-                break
-
-            for record in records:
-                for balance_entry in record.get("balances", []):
-                    if balance_entry.get("asset_code") == ASSET_CODE and balance_entry.get("asset_issuer") == ASSET_ISSUER:
-                        holders.append({
-                            "address": record["account_id"],
-                            "balance": float(balance_entry["balance"])
-                        })
-                        break # Move to next account after finding CBPAY balance
-            
-            # Check for next page
-            next_link = data.get("_links", {}).get("next", {}).get("href")
-            if next_link:
-                url = next_link
-                params = {} # Reset params as next_link contains all necessary query string
-            else:
-                break
-            time.sleep(0.1) # Be kind to the API
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching holders: {e}")
-            break
-    
     # Sort holders by balance in descending order
     holders.sort(key=lambda x: x["balance"], reverse=True)
-    return holders
+    
+    # Return only the top 50 holders
+    return holders[:50]
 
 # --- Function to get large transactions ---
 def get_large_transactions(limit=10, threshold=100000):

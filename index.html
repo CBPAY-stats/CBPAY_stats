@@ -320,7 +320,7 @@
     </div>
 
     <div class="container">
-        <div class="total-holders">Total Holders: <span id="total-holders-count">Loading...</span></div>
+        <div class="total-holders">Top 50 Holders: <span id="total-holders-count">Loading...</span></div>
         <div class="controls">
             <input type="text" id="search-input" placeholder="Search by address...">
             <select id="sort-select">
@@ -416,7 +416,7 @@
                 document.getElementById("price").textContent = `$${marketData.price_usd.toFixed(8)}`;
             }
 
-            // Update total holders count
+            // Update top 50 holders count
             document.getElementById('total-holders-count').textContent = holdersData.length.toLocaleString();
 
             // Update large transactions
