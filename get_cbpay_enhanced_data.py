@@ -1,191 +1,193 @@
 import requests
 import json
-import datetime
 import time
 
-# CoinGecko API configuration
-COINGECKO_API_KEY = "CG-8CoKVLYmm4crygn9DeHvFUAk" # Replace with your actual API key
+# CoinMarketCap API configuration
+COINMARKETCAP_API_KEY = "db7ad51a-325c-4047-8799-005c2664b776"
+COINMARKETCAP_API_URL = "https://pro-api.coinmarketcap.com/v1"
+COINMARKETCAP_CBPAY_ID = "32992" # Corrected ID for CBPAY
+
+# CoinGecko API configuration (will be used as fallback)
 COINGECKO_API_URL = "https://api.coingecko.com/api/v3"
-COINGECKO_HEADERS = {"x-cg-pro-api-key": COINGECKO_API_KEY}
+COINGECKO_COIN_ID = "coinbarpay"
+
+# MEXC API configuration (will be removed if CoinMarketCap works reliably)
+MEXC_API_URL = "https://api.mexc.com/api/v3"
+MEXC_SYMBOL = "CBPAY_USDT"
 
 # XDB Chain Horizon API configuration
-HORIZON_URL = "https://horizon.livenet.xdbchain.com"
-ASSET_CODE = "CBPAY"
-ASSET_ISSUER = "GD7PT6VAXH227WBYR5KN3OYKGSNXVETMYZUP3R62DFX3BBC7GGOBDFJ2"
+XDB_HORIZON_URL = "https://horizon.livenet.xdbchain.com/"
+CBPAY_ASSET_CODE = "CBPAY"
+CBPAY_ISSUER_ACCOUNT = "GD7PT6VAXH227WBYR5KN3OYKGSNXVETMYZUP3R62DFX3BBC7GGQ"
 
-# --- Function to get CoinGecko data ---
-def get_coingecko_data():
+def get_cbpay_market_data():
+    print("Fetching CoinMarketCap data...")
+    try:
+        headers = {
+            'Accepts': 'application/json',
+            'X-CMC_PRO_API_KEY': COINMARKETCAP_API_KEY,
+        }
+        params = {
+            'id': COINMARKETCAP_CBPAY_ID,
+            'convert': 'USD'
+        }
+        response = requests.get(f"{COINMARKETCAP_API_URL}/cryptocurrency/quotes/latest", headers=headers, params=params)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        data = response.json()
+        
+        price_usd = None
+        market_cap_usd = None
+        volume_24h_usd = None
+        change_24h_usd = None
+
+        if data and "data" in data and str(COINMARKETCAP_CBPAY_ID) in data["data"]:
+            cbpay_data = data["data"][str(COINMARKETCAP_CBPAY_ID)]
+            quote = cbpay_data.get("quote", {}).get("USD", {})
+            price_usd = quote.get("price")
+            market_cap_usd = quote.get("market_cap")
+            volume_24h_usd = quote.get("volume_24h")
+            change_24h_usd = quote.get("percent_change_24h")
+            
+        market_data = {
+            "price_usd": price_usd,
+            "market_cap_usd": market_cap_usd,
+            "volume_24h_usd": volume_24h_usd,
+            "change_24h_usd": change_24h_usd,
+            "last_updated_at": int(time.time())
+        }
+        with open("cbpay_market_data.json", "w") as f:
+            json.dump(market_data, f, indent=4)
+        print("cbpay_market_data.json updated from CoinMarketCap.")
+        return market_data
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching CoinMarketCap data: {e}")
+        print("Falling back to CoinGecko for market data...")
+        return get_cbpay_market_data_coingecko()
+
+def get_cbpay_market_data_coingecko():
     print("Fetching CoinGecko data...")
     try:
-        # Get coin ID for CBPAY
-        search_url = f"{COINGECKO_API_URL}/search?query=cbpay"
-        search_response = requests.get(search_url, headers=COINGECKO_HEADERS)
-        search_response.raise_for_status()
-        search_data = search_response.json()
+        response = requests.get(f"{COINGECKO_API_URL}/simple/price?ids={COINGECKO_COIN_ID}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true&include_last_updated_at=true")
+        response.raise_for_status()
+        data = response.json()
         
-        cbpay_id = None
-        for coin in search_data.get("coins", []):
-            if coin["symbol"].upper() == ASSET_CODE and "coinbarpay" in coin["id"].lower():
-                cbpay_id = coin["id"]
-                break
-        
-        if not cbpay_id:
-            print(f"Could not find CoinGecko ID for {ASSET_CODE}")
-            return None
+        price_usd = data.get(COINGECKO_COIN_ID, {}).get("usd")
+        market_cap_usd = data.get(COINGECKO_COIN_ID, {}).get("usd_market_cap")
+        volume_24h_usd = data.get(COINGECKO_COIN_ID, {}).get("usd_24h_vol")
+        change_24h_usd = data.get(COINGECKO_COIN_ID, {}).get("usd_24h_change")
+        last_updated_at = data.get(COINGECKO_COIN_ID, {}).get("last_updated_at")
 
-        # Get market data
-        market_data_url = f"{COINGECKO_API_URL}/simple/price?ids={cbpay_id}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true"
-        market_data_response = requests.get(market_data_url, headers=COINGECKO_HEADERS)
-        market_data_response.raise_for_status()
-        market_data = market_data_response.json()
-
-        if cbpay_id in market_data:
-            data = market_data[cbpay_id]
-            return {
-                "price_usd": data.get("usd"),
-                "market_cap_usd": data.get("usd_market_cap"),
-                "volume_24h_usd": data.get("usd_24h_vol"),
-                "price_change_24h": data.get("usd_24h_change"),
-                "last_updated": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "source": "CoinGecko"
-            }
-        else:
-            print(f"No market data found for {cbpay_id}")
-            return None
+        market_data = {
+            "price_usd": price_usd,
+            "market_cap_usd": market_cap_usd,
+            "volume_24h_usd": volume_24h_usd,
+            "change_24h_usd": change_24h_usd,
+            "last_updated_at": last_updated_at
+        }
+        with open("cbpay_market_data.json", "w") as f:
+            json.dump(market_data, f, indent=4)
+        print("cbpay_market_data.json updated from CoinGecko.")
+        return market_data
     except requests.exceptions.RequestException as e:
         print(f"Error fetching CoinGecko data: {e}")
         return None
 
-# --- Function to get all holders ---
-def get_all_holders():
-    print("Fetching all CBPAY holders...")
+def get_cbpay_holders():
+    print("Fetching CBPAY holders...")
     holders = []
-    params = {
-        "asset_code": ASSET_CODE,
-        "asset_issuer": ASSET_ISSUER,
-        "limit": 200, # Max limit per request
-        "order": "desc"
-    }
-    url = f"{HORIZON_URL}/accounts"
-
+    cursor = None
     while True:
         try:
-            response = requests.get(url, params=params)
+            params = {
+                "asset": f"{CBPAY_ASSET_CODE}:{CBPAY_ISSUER_ACCOUNT}",
+                "limit": 200,
+                "order": "asc"
+            }
+            if cursor:
+                params["cursor"] = cursor
+
+            response = requests.get(f"{XDB_HORIZON_URL}accounts", params=params)
             response.raise_for_status()
             data = response.json()
-            records = data.get("_embedded", {}).get("records", [])
-
-            if not records:
-                break
-
-            for record in records:
-                for balance_entry in record.get("balances", []):
-                    if balance_entry.get("asset_code") == ASSET_CODE and balance_entry.get("asset_issuer") == ASSET_ISSUER:
+            
+            for record in data["_embedded"]["records"]:
+                for balance in record["balances"]:
+                    if balance.get("asset_code") == CBPAY_ASSET_CODE and balance.get("asset_issuer") == CBPAY_ISSUER_ACCOUNT:
                         holders.append({
                             "address": record["account_id"],
-                            "balance": float(balance_entry["balance"])
+                            "balance": float(balance["balance"])
                         })
-                        break # Move to next account after finding CBPAY balance
             
-            # Check for next page
-            next_link = data.get("_links", {}).get("next", {}).get("href")
-            if next_link:
-                url = next_link
-                params = {} # Reset params as next_link contains all necessary query string
+            if "_links" in data and "next" in data["_links"]:
+                next_link = data["_links"]["next"]["href"]
+                if "cursor=" in next_link:
+                    cursor_part = next_link.split("cursor=")[1]
+                    if "&" in cursor_part:
+                        cursor = cursor_part.split("&")[0]
+                    else:
+                        cursor = cursor_part
+                else:
+                    break
             else:
                 break
-            time.sleep(0.1) # Be kind to the API
-
+            time.sleep(0.5) 
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching holders: {e}")
+            print(f"Error fetching XDB Chain accounts: {e}")
             break
     
-    # Sort holders by balance in descending order
     holders.sort(key=lambda x: x["balance"], reverse=True)
+
+    with open("cbpay_holders.json", "w") as f:
+        json.dump(holders, f, indent=4)
+    print("cbpay_holders.json updated.")
     return holders
 
-# --- Function to get large transactions ---
-def get_large_transactions(limit=10, threshold=100000):
-    print(f"Fetching top {limit} large transactions (>= {threshold} CBPAY)...")
-    transactions = []
-    params = {
-        "asset_code": ASSET_CODE,
-        "asset_issuer": ASSET_ISSUER,
-        "limit": 200, # Max limit per request
-        "order": "desc",
-        "cursor": "now"
-    }
-    url = f"{HORIZON_URL}/payments"
+def get_cbpay_large_transactions():
+    print("Fetching top 10 large transactions (>= 100000 CBPAY)....")
+    large_transactions = []
+    try:
+        response = requests.get(f"{XDB_HORIZON_URL}payments?asset_code={CBPAY_ASSET_CODE}&asset_issuer={CBPAY_ISSUER_ACCOUNT}&limit=10&order=desc")
+        response.raise_for_status()
+        data = response.json()
 
-    while len(transactions) < limit:
-        try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            records = data.get("_embedded", {}).get("records", [])
-
-            if not records:
-                break
-
-            for record in records:
-                if record["type"] == "payment" and \
-                   record.get("asset_code") == ASSET_CODE and \
-                   record.get("asset_issuer") == ASSET_ISSUER and \
-                   float(record.get("amount", 0)) >= threshold:
-                    transactions.append({
-                        "amount": float(record["amount"]),
+        for record in data["_embedded"]["records"]:
+            if record["type"] == "payment" and "asset_code" in record and record["asset_code"] == CBPAY_ASSET_CODE:
+                amount = float(record["amount"])
+                if amount >= 100000:
+                    large_transactions.append({
+                        "id": record["id"],
                         "from": record["from"],
                         "to": record["to"],
-                        "date": record["created_at"],
-                        "transaction_hash": record["transaction_hash"]
+                        "amount": amount,
+                        "asset_code": record["asset_code"],
+                        "asset_issuer": record["asset_issuer"],
+                        "created_at": record["created_at"]
                     })
-                    if len(transactions) >= limit:
-                        break
-            
-            # Check for next page
-            next_link = data.get("_links", {}).get("next", {}).get("href")
-            if next_link:
-                url = next_link
-                params = {} # Reset params as next_link contains all necessary query string
-            else:
-                break
-            time.sleep(0.1) # Be kind to the API
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching large transactions: {e}")
-            break
-    
-    return transactions[:limit]
-
-# --- Main execution ---
-if __name__ == "__main__":
-    # Get market data
-    market_data = get_coingecko_data()
-    if market_data:
-        with open("cbpay_market_data.json", "w") as f:
-            json.dump(market_data, f, indent=4)
-        print("cbpay_market_data.json updated.")
-    else:
-        print("Failed to get market data.")
-
-    # Get all holders
-    all_holders = get_all_holders()
-    if all_holders:
-        with open("cbpay_holders.json", "w") as f:
-            json.dump(all_holders, f, indent=4)
-        print(f"cbpay_holders.json updated with {len(all_holders)} holders.")
-    else:
-        print("Failed to get holders data.")
-
-    # Get large transactions
-    large_transactions = get_large_transactions(limit=10, threshold=100000) # Get top 10 transactions >= 100,000 CBPAY
-    if large_transactions:
+        
         with open("cbpay_large_transactions.json", "w") as f:
             json.dump(large_transactions, f, indent=4)
-        print(f"cbpay_large_transactions.json updated with {len(large_transactions)} transactions.")
-    else:
-        print("Failed to get large transactions.")
+        print("cbpay_large_transactions.json updated with 10 transactions.")
+        return large_transactions
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching large transactions: {e}")
+        return None
 
-    print("Data collection complete.")
+if __name__ == "__main__":
+    market_data = get_cbpay_market_data()
+    if market_data:
+        print(f"Market Data: {market_data}")
+    
+    holders_data = get_cbpay_holders()
+    if holders_data:
+        print(f"Total Holders: {len(holders_data)}")
+        print(f"Top 5 Holders:")
+        for i, holder in enumerate(holders_data[:5]):
+            print(f"  {i+1}. Address: {holder['address']}, Balance: {holder['balance']}")
+
+    large_transactions = get_cbpay_large_transactions()
+    if large_transactions:
+        print(f"Large Transactions: {len(large_transactions)}")
+        for tx in large_transactions:
+            print(f"  Amount: {tx['amount']}, From: {tx['from']}, To: {tx['to']}")
 
 
