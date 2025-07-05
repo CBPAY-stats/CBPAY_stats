@@ -316,18 +316,6 @@
                 <h3>Price (USD)</h3>
                 <p id="price">Loading...</p>
             </div>
-            <div class="market-data-card">
-                <h3>Market Cap</h3>
-                <p id="market-cap">Loading...</p>
-            </div>
-            <div class="market-data-card">
-                <h3>24h Volume</h3>
-                <p id="volume">Loading...</p>
-            </div>
-            <div class="market-data-card">
-                <h3>24h Change</h3>
-                <p id="change">Loading...</p>
-            </div>
         </div>
     </div>
 
@@ -425,13 +413,7 @@
         function updateUI() {
             // Update market data
             if (marketData.price_usd !== undefined) {
-                document.getElementById('price').textContent = `$${marketData.price_usd.toFixed(8)}`;
-                document.getElementById('market-cap').textContent = `$${marketData.market_cap_usd.toLocaleString()}`;
-                document.getElementById('volume').textContent = `$${marketData.volume_24h_usd.toLocaleString()}`;
-                
-                const changeElement = document.getElementById('change');
-                const changeValue = marketData.price_change_24h;
-                changeElement.innerHTML = `<span class="change ${changeValue >= 0 ? 'positive' : 'negative'}">${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%</span>`;
+                document.getElementById("price").textContent = `$${marketData.price_usd.toFixed(8)}`;
             }
 
             // Update total holders count
