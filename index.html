@@ -296,16 +296,7 @@
     </div>
 
     <div class="container">
-        <div class="total-holders">Top 50 Holders</div>
-        <div class="controls">
-            <input type="text" id="search-input" placeholder="Search by address...">
-            <select id="sort-select">
-                <option value="balance-desc">Highest Balance</option>
-                <option value="balance-asc">Lowest Balance</option>
-                <option value="address-asc">Address (A-Z)</option>
-                <option value="address-desc">Address (Z-A)</option>
-            </select>
-        </div>
+        <div class="total-holders">Top 50 Holders</div>    
         <div class="table-container">
             <table>
                 <thead>
@@ -450,45 +441,6 @@
                 `;
             }).join('');
         }
-
-        function sortData(criteria) {
-            switch (criteria) {
-                case 'balance-desc':
-                    filteredData.sort((a, b) => b.balance - a.balance);
-                    break;
-                case 'balance-asc':
-                    filteredData.sort((a, b) => a.balance - b.balance);
-                    break;
-                case 'address-asc':
-                    filteredData.sort((a, b) => a.address.localeCompare(b.address));
-                    break;
-                case 'address-desc':
-                    filteredData.sort((a, b) => b.address.localeCompare(a.address));
-                    break;
-            }
-            updateTable();
-        }
-
-        function filterData(searchTerm) {
-            if (!searchTerm) {
-                filteredData = [...holdersData];
-            } else {
-                filteredData = holdersData.filter(holder => 
-                    holder.address.toLowerCase().includes(searchTerm.toLowerCase())
-                );
-            }
-            updateTable();
-        }
-
-        // Event listeners
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            filterData(e.target.value);
-        });
-
-        document.getElementById('sort-select').addEventListener('change', (e) => {
-            sortData(e.target.value);
-        });
-
         // Load data on page load
         loadData();
     </script>
