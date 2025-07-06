@@ -62,18 +62,35 @@ def get_coinmarketcap_data():
         print(f"Error fetching CoinMarketCap data: {e}")
         return None
 
+# --- Function to get balance for a single account ---
+def get_account_balance(account_id):
+    try:
+        response = requests.get(f"{HORIZON_URL}/accounts/{account_id}")
+        response.raise_for_status()
+        data = response.json()
+        for balance in data["balances"]:
+            if balance.get("asset_code") == ASSET_CODE and balance.get("asset_issuer") == ASSET_ISSUER:
+                return float(balance["balance"])
+        return 0.0 # Return 0 if CBPAY balance not found
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching balance for {account_id}: {e}")
+        return 0.0
+
 # --- Function to get all holders ---
 def get_all_holders():
-    print("Processing local CBPAY holders data for top 50...")
+    print("Fetching CBPAY holders data...")
+    holders = []
     try:
-        with open("cbpay_holders.json", "r") as f:
-            holders = json.load(f)
+        with open("wallet_addresses.txt", "r") as f:
+            wallet_addresses = [line.strip() for line in f if line.strip()]
     except FileNotFoundError:
-        print("cbpay_holders.json not found. Cannot process holders.")
+        print("wallet_addresses.txt not found. Cannot fetch holders.")
         return []
-    except json.JSONDecodeError:
-        print("Error decoding cbpay_holders.json. File might be corrupted.")
-        return []
+
+    for address in wallet_addresses:
+        balance = get_account_balance(address)
+        holders.append({"address": address, "balance": balance})
+        time.sleep(0.1) # Be kind to the API
 
     # Sort holders by balance in descending order
     holders.sort(key=lambda x: x["balance"], reverse=True)
@@ -164,6 +181,8 @@ if __name__ == "__main__":
         print("Failed to get large transactions.")
 
     print("Data collection complete.")
+
+
 
 
 
