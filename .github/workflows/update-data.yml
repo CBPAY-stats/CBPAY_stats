@@ -28,9 +28,9 @@ jobs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git pull origin main --rebase
-        git add cbpay_holders.json cbpay_market_data.json cbpay_large_transactions.json
+        git add .
         git diff-index --quiet HEAD || git commit -m "Update CBPAY holders data"
+        git pull origin main --rebase
         git push
 
 
