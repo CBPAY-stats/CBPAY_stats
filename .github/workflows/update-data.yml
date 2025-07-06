@@ -3,7 +3,7 @@ name: Update CBPAY Holders Data
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/15 * * * *' # Runs every 25 minutes
+    - cron: '*/15 * * * *' # Runs every 60 minutes
 
 jobs:
   update-data:
