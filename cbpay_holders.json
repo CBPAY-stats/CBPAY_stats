@@ -164,10 +164,6 @@
         "balance": 930892.5585306
     },
     {
-        "address": "GAHZ7VPRJDLE3CLRWEUEMZFFDMCUS6JXW6NFLAFMSQ36TWRAZKZDG3NA",
-        "balance": 914605.4414186
-    },
-    {
         "address": "GCV5PO6I7JTKNTHXXOOXJ2OFHYGZ27XZXH3UFULMJSZ2FCCNVULPSPW3",
         "balance": 911609.3871948
     },
@@ -197,6 +193,10 @@
     },
     {
         "address": "GCNJ4SV2CJ5BJQEQBEMVIMDAOU5W2RWMRNRYRLPLYQ6VDQ3JCCCNTITE",
+        "balance": 840155.1615
+    },
+    {
+        "address": "GDE5JHTZNIK27CMTR4PW6UYXR5S45AVS5TXEYFNDMC7YUPZUG4EU7FIM",
         "balance": 840155.1615
     }
 ]
