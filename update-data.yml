@@ -1,35 +1,54 @@
 name: Update CBPAY Holders Data
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '0 * * * *' # Runs every hour
+    # Runs every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allows manual triggering
+
+permissions:
+  contents: write
+  actions: read
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
       with:
-        python-version: '3.x'
-
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
     - name: Install dependencies
-      run: pip install requests
-
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+    
     - name: Run data collection script
+      env:
+        COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
       run: python get_cbpay_enhanced_data.py
-
-    - name: Commit and push changes
+    
+    - name: Configure Git
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Pull latest changes and commit updates
+      run: |
+        git pull origin main --rebase
         git add cbpay_holders.json cbpay_market_data.json cbpay_large_transactions.json
-        git commit -m "Update CBPAY holders data" || echo "No changes to commit"
-        git push
-
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update CBPAY data - $(date)"
+          git push origin main
+        fi
 
