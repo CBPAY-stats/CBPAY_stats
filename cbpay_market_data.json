@@ -1,8 +1,8 @@
 {
-    "price_usd": 7.679007742940626e-05,
-    "market_cap_usd": 282637.9026174025,
-    "volume_24h_usd": 0,
-    "price_change_24h": 0.74170659,
-    "last_updated": "2026-04-07T12:42:20.321450+00:00",
+    "price_usd": 7.545437961689854e-05,
+    "market_cap_usd": 277721.6576949398,
+    "volume_24h_usd": 21.70495886,
+    "price_change_24h": -1.01060935,
+    "last_updated": "2026-04-07T14:14:59.239053+00:00",
     "source": "CoinMarketCap"
 }
